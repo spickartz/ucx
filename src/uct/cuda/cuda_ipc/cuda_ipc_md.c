@@ -56,14 +56,19 @@ static ucs_status_t uct_cuda_ipc_rkey_unpack(uct_component_t *component,
 {
     uct_cuda_ipc_key_t *packed = (uct_cuda_ipc_key_t *) rkey_buffer;
     uct_cuda_ipc_key_t *key;
-    ucs_status_t status;
+    ucs_status_t status = UCS_OK;
     CUdevice cu_device;
-    int peer_accessble;
+    int peer_accessble = 1;
 
     UCT_CUDA_IPC_GET_DEVICE(cu_device);
 
-    status = UCT_CUDADRV_FUNC(cuDeviceCanAccessPeer(&peer_accessble,
-                                                    cu_device, packed->dev_num));
+    /* only check the accessibility if the devices differ */
+    if (cu_device != packed->dev_num) {
+        status = UCT_CUDADRV_FUNC(cuDeviceCanAccessPeer(&peer_accessble,
+                                                        cu_device,
+                                                        packed->dev_num));
+    }
+
     if ((status != UCS_OK) || (peer_accessble == 0)) {
         return UCS_ERR_UNREACHABLE;
     }
